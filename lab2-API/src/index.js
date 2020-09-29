@@ -10,44 +10,45 @@ app.use(helmet());
 app.use(express.json());
 app.use(cors());
 
-static_path = 'data/';
+const data_path = 'data/data.json';
 
 app.get('/', (req, res) => {
     res.json({msg: "Iep, klk" });
 });
 
 app.post('/car', (req, res) => {
-    const today = new Date();
 
-    let rental = JSON.stringify({
+    let rental = {
         maker: req.body.maker,
         model: req.body.model,
         days:  req.body.days,
         units: req.body.units
-    });
-    let filename = static_path + today.getHours() + today.getMinutes() + today.getSeconds() + '.json'
-    
-    fs.appendFile(filename, rental, (err) => {
+    }; 
+
+    let cars = JSON.parse(fs.readFileSync(data_path));
+    console.log(cars);
+    cars['car'].push(rental)
+    console.log(cars);
+
+    fs.writeFileSync(data_path, JSON.stringify(cars), (err) => {
         if (err) return console.log(err);
-        console.log('added ' + filename);
-    }); 
+        console.log('added new car');
+    });
     res.status(201);
     res.send(rental);
     res.end();
 });
 
 app.get('/car', (req, res) => {
-    let cars = [];
-    let files = fs.readdirSync(static_path);
-    files.forEach((file, index) => {
-        cars.push(JSON.parse(fs.readFileSync(static_path+file)));
-        console.log(cars);
-    });
-    res.send(cars);
+    res.send(JSON.parse(fs.readFileSync(data_path)));
 });
 
-
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 8080;
 app.listen(port, () => {
+    if (!fs.existsSync(data_path)) {
+        fs.appendFile(data_path, JSON.stringify({car: []}), (err) => {
+            if (err) return console.log(err);
+        });
+    }
     console.log(`Listening: http://localhost:${port}`);
 });
